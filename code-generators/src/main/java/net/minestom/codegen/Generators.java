@@ -1,6 +1,7 @@
 package net.minestom.codegen;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -32,6 +33,8 @@ public final class Generators {
                 resource("villager_types.json"), outputFolder).generate();
         new WorldEventGenerator("net.minestom.server.worldevent", "WorldEvent",
                 resource("world_events.json"), outputFolder).generate();
+        new BlockPropertyGenerator("net.minestom.server.instance.block", "BlockProperties",
+                resource("block_property.json"), outputFolder).generate();
 
         var generator = new RegistryGenerator(outputFolder);
 
