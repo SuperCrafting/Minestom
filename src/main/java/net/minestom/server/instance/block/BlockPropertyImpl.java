@@ -7,7 +7,8 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.util.*;
 import java.util.stream.IntStream;
 
-abstract class BlockPropertyImpl<T extends Comparable<T>> implements BlockProperty<T> {
+abstract sealed class BlockPropertyImpl<T extends Comparable<T>> implements BlockProperty<T> permits
+        BlockPropertyImpl.IntImpl, BlockPropertyImpl.EnumImpl, BlockPropertyImpl.BooleanImpl {
 
     private final String name;
 

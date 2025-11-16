@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 public record BlockPropertyGenerator(
         String packageName, String blockPropertyClassName,
@@ -33,20 +35,15 @@ public record BlockPropertyGenerator(
     public void generate() {
         ensureDirectory(outputFolder);
 
-        JsonObject root;
-        try (var reader = new InputStreamReader(entriesFile, StandardCharsets.UTF_8)) {
-            root = GSON.fromJson(reader, JsonObject.class);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to read block property definitions", e);
-        }
-        if (root == null) throw new IllegalStateException("Block property definition file is empty");
+        JsonObject root = GSON.fromJson(new InputStreamReader(entriesFile, StandardCharsets.UTF_8), JsonObject.class);
 
         ClassName interfaceCN = ClassName.get(packageName, blockPropertyClassName);
         ClassName blockPropertyCN = ClassName.get("net.minestom.server.instance.block", "BlockProperty");
         ClassName blockPropertyImplCN = ClassName.get("net.minestom.server.instance.block", "BlockPropertyImpl");
 
         TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(interfaceCN)
-                .addModifiers(Modifier.PUBLIC)
+                .addModifiers(Modifier.SEALED)
+                .addPermittedSubclass(blockPropertyCN)
                 .addJavadoc(generateJavadoc(blockPropertyCN));
 
         List<PropertyDefinition> definitions = root.entrySet().stream()
@@ -59,8 +56,11 @@ public record BlockPropertyGenerator(
         }
 
         definitions.stream()
-                .map(PropertyDefinition::enumDefinition)
+                .map(PropertyDefinition::definition)
                 .filter(Objects::nonNull)
+                .filter(def -> !def.typeName().isBlank())
+                .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(EnumDefinition::typeName))))
+                .stream()
                 .map(this::buildEnum)
                 .forEach(interfaceBuilder::addType);
 
@@ -80,7 +80,7 @@ public record BlockPropertyGenerator(
                     .initializer("new $T.IntImpl($S, $L, $L)", blockPropertyImplCN, definition.stateName(), definition.min(), definition.max())
                     .build();
             case ENUM -> {
-                EnumDefinition enumDefinition = definition.enumDefinition();
+                EnumDefinition enumDefinition = definition.definition();
                 if (enumDefinition == null) {
                     throw new IllegalStateException("Enum property without enum definition: " + definition.constantName());
                 }
@@ -95,7 +95,7 @@ public record BlockPropertyGenerator(
 
     private TypeSpec buildEnum(EnumDefinition enumDefinition) {
         TypeSpec.Builder enumBuilder = TypeSpec.enumBuilder(enumDefinition.typeName())
-                .addModifiers(Modifier.PUBLIC)
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .addField(FieldSpec.builder(String.class, "serialized", Modifier.PRIVATE, Modifier.FINAL).build())
                 .addMethod(MethodSpec.constructorBuilder()
                         .addParameter(String.class, "serialized")
@@ -162,7 +162,7 @@ public record BlockPropertyGenerator(
     }
 
     private record PropertyDefinition(String constantName, String stateName, PropertyType type,
-                                      int min, int max, EnumDefinition enumDefinition) {
+                                      int min, int max, EnumDefinition definition) {
     }
 
     private record EnumDefinition(String typeName, List<EnumValue> values) {

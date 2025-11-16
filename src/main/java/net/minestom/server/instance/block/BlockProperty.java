@@ -5,7 +5,8 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.util.List;
 import java.util.Optional;
 
-public interface BlockProperty<T extends Comparable<T>> {
+public sealed interface BlockProperty<T extends Comparable<T>> extends BlockProperties permits BlockPropertyImpl,
+        BlockProperty.Boolean, BlockProperty.Enum, BlockProperty.Integer {
 
     String name();
 
