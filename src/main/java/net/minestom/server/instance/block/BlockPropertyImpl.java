@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 abstract sealed class BlockPropertyImpl<T extends Comparable<T>> implements BlockProperty<T> permits
-        BlockPropertyImpl.IntImpl, BlockPropertyImpl.EnumImpl, BlockPropertyImpl.BooleanImpl {
+        BlockPropertyImpl.IntegerImpl, BlockPropertyImpl.EnumImpl, BlockPropertyImpl.BooleanImpl {
 
     private final String name;
 
@@ -32,13 +32,13 @@ abstract sealed class BlockPropertyImpl<T extends Comparable<T>> implements Bloc
         return Objects.hash(name);
     }
 
-    public static final class IntImpl extends BlockPropertyImpl<java.lang.Integer> implements BlockProperty.Integer {
+    public static final class IntegerImpl extends BlockPropertyImpl<java.lang.Integer> implements BlockProperty.Integer {
 
         private final int min;
         private final int max;
         private final IntList values;
 
-        public IntImpl(String name, int min, int max) {
+        public IntegerImpl(String name, int min, int max) {
             super(name);
             this.min = min;
             this.max = max;
@@ -69,15 +69,24 @@ abstract sealed class BlockPropertyImpl<T extends Comparable<T>> implements Bloc
         @Override
         public Optional<java.lang.Integer> parse(String value) {
             try {
-                return Optional.empty();
+                int intValue = java.lang.Integer.parseInt(value);
+                if (!contains(intValue))
+                    return Optional.empty();
+
+                return Optional.of(intValue);
             } catch (NumberFormatException e) {
                 return Optional.empty();
             }
         }
 
         @Override
+        public String serialize(java.lang.Integer value) {
+            return value.toString();
+        }
+
+        @Override
         public boolean equals(Object o) {
-            if (!(o instanceof IntImpl anInt)) return false;
+            if (!(o instanceof BlockPropertyImpl.IntegerImpl anInt)) return false;
             if (!super.equals(o)) return false;
             return min == anInt.min && max == anInt.max;
         }
@@ -88,7 +97,7 @@ abstract sealed class BlockPropertyImpl<T extends Comparable<T>> implements Bloc
         }
     }
 
-    public static final class EnumImpl<E extends java.lang.Enum<E>> extends BlockPropertyImpl<E> implements BlockProperty.Enum<E> {
+    public static final class EnumImpl<E extends java.lang.Enum<E> & Enum.Mojang> extends BlockPropertyImpl<E> implements BlockProperty.Enum<E> {
 
         private final Map<String, E> nameToValue;
         private final List<E> values;
@@ -119,6 +128,11 @@ abstract sealed class BlockPropertyImpl<T extends Comparable<T>> implements Bloc
         public Optional<E> parse(String value) {
             return Optional.ofNullable(nameToValue.get(value.toLowerCase()));
         }
+
+        @Override
+        public String serialize(E value) {
+            return value.serialized();
+        }
     }
 
     public static final class BooleanImpl extends BlockPropertyImpl<java.lang.Boolean> implements BlockProperty.Boolean {
@@ -142,9 +156,12 @@ abstract sealed class BlockPropertyImpl<T extends Comparable<T>> implements Bloc
 
         @Override
         public Optional<java.lang.Boolean> parse(String value) {
-            if (value.equalsIgnoreCase("true")) return Optional.of(true);
-            if (value.equalsIgnoreCase("false")) return Optional.of(false);
-            return Optional.empty();
+            return Optional.of(java.lang.Boolean.parseBoolean(value));
+        }
+
+        @Override
+        public String serialize(java.lang.Boolean value) {
+            return value.toString();
         }
     }
 

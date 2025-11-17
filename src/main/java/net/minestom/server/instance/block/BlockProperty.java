@@ -16,8 +16,9 @@ public sealed interface BlockProperty<T extends Comparable<T>> extends BlockProp
     boolean contains(T value);
 
     Optional<T> parse(String value);
+    String serialize(T value);
 
-    sealed interface Integer extends BlockProperty<java.lang.Integer> permits BlockPropertyImpl.IntImpl {
+    sealed interface Integer extends BlockProperty<java.lang.Integer> permits BlockPropertyImpl.IntegerImpl {
         int min();
         int max();
     }
@@ -25,7 +26,13 @@ public sealed interface BlockProperty<T extends Comparable<T>> extends BlockProp
     sealed interface Boolean extends BlockProperty<java.lang.Boolean> permits BlockPropertyImpl.BooleanImpl {
     }
 
-    sealed interface Enum<E extends java.lang.Enum<E>> extends BlockProperty<E> permits BlockPropertyImpl.EnumImpl {
+    sealed interface Enum<E extends java.lang.Enum<E> & Enum.Mojang> extends BlockProperty<E>
+            permits BlockPropertyImpl.EnumImpl {
+
+        interface Mojang {
+            String serialized();
+        }
+
     }
 
 }
