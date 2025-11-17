@@ -77,7 +77,7 @@ public record BlockPropertyGenerator(
                     .initializer("new $T.BooleanImpl($S)", blockPropertyImplCN, definition.stateName())
                     .build();
             case INTEGER -> FieldSpec.builder(blockPropertyCN.nestedClass("Integer"), definition.constantName(), Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("new $T.IntImpl($S, $L, $L)", blockPropertyImplCN, definition.stateName(), definition.min(), definition.max())
+                    .initializer("new $T.IntegerImpl($S, $L, $L)", blockPropertyImplCN, definition.stateName(), definition.min(), definition.max())
                     .build();
             case ENUM -> {
                 EnumDefinition enumDefinition = definition.definition();
